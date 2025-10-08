@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID, serviceAccountAuth);
     await doc.loadInfo();
 
-    // Pegar a primeira aba da planilha
+    // Pegar a primeira aba
     const sheet = doc.sheetsByIndex[0];
     
     if (!sheet) {
@@ -38,9 +38,7 @@ export default async function handler(req, res) {
       'Valor Investimento': req.body.valorInvestimento || 'R$ 0',
       'Tempo para Início': req.body.tempoInicio,
       'Expectativa': req.body.expectativa,
-      'NPS (Dificuldade)': req.body.nps,
-      'Data Agendamento': req.body.dataAgendamento,
-      'Horário Agendamento': req.body.horarioAgendamento
+      'NPS (Dificuldade)': req.body.nps
     });
 
     return res.status(200).json({ success: true });

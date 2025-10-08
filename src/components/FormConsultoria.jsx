@@ -5,8 +5,6 @@ const FormConsultoria = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -66,13 +64,10 @@ const FormConsultoria = () => {
 
     const dataToSend = {
       ...formData,
-      dataAgendamento: selectedDate,
-      horarioAgendamento: selectedTime,
       dataPreenchimento: new Date().toISOString()
     };
 
     try {
-      // Enviar para API do Google Sheets
       const response = await fetch('/api/enviar-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,6 +94,20 @@ const FormConsultoria = () => {
 
         setLoading(false);
         setSubmitted(true);
+
+        // Redirecionar para WhatsApp após 2 segundos
+        setTimeout(() => {
+          const mensagem = encodeURIComponent(
+            `Olá! Acabei de preencher o formulário de consultoria gratuita.\n\n` +
+            `📋 Meus dados:\n` +
+            `Nome: ${formData.nome}\n` +
+            `Email: ${formData.email}\n` +
+            `Empresa: ${formData.empresa}\n` +
+            `Cargo: ${formData.cargo}\n\n` +
+            `Gostaria de agendar a consultoria. Qual a melhor data e horário para você?`
+          );
+          window.location.href = `https://wa.me/5519990122773?text=${mensagem}`;
+        }, 2000);
       }
     } catch (error) {
       console.error('Erro ao enviar:', error);
@@ -114,28 +123,9 @@ const FormConsultoria = () => {
       case 3: return formData.investeEmAnuncios && (formData.investeEmAnuncios === 'nao' || formData.valorInvestimento);
       case 4: return formData.tempoInicio && formData.expectativa;
       case 5: return formData.nps > 0;
-      case 6: return selectedDate && selectedTime;
       default: return true;
     }
   };
-
-  // Gerar dias da semana (próximos 14 dias úteis)
-  const getAvailableDates = () => {
-    const dates = [];
-    let current = new Date();
-    
-    while (dates.length < 14) {
-      current.setDate(current.getDate() + 1);
-      const day = current.getDay();
-      if (day !== 0 && day !== 6) { // Não é sábado nem domingo
-        dates.push(new Date(current));
-      }
-    }
-    return dates;
-  };
-
-  const availableDates = getAvailableDates();
-  const availableTimes = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'];
 
   if (submitted) {
     return (
@@ -145,20 +135,18 @@ const FormConsultoria = () => {
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Agendamento Confirmado!
+            Formulário Enviado!
           </h2>
           <p className="text-gray-600 mb-6">
-            Sua consultoria foi agendada para <strong>{selectedDate}</strong> às <strong>{selectedTime}</strong>.
+            Recebemos suas informações com sucesso! 
           </p>
           <p className="text-gray-600 mb-8">
-            Você receberá um e-mail de confirmação em breve e entraremos em contato via WhatsApp.
+            Você será redirecionado para o WhatsApp para agendar sua consultoria gratuita.
           </p>
-          <a 
-            href="https://agenciagtx.com.br" 
-            className="inline-block bg-green-500 text-white px-8 py-3 rounded-full font-semibold hover:bg-green-600 transition-all"
-          >
-            Voltar ao Site
-          </a>
+          <div className="flex flex-col gap-3">
+            <div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full mx-auto"></div>
+            <p className="text-sm text-gray-500">Redirecionando...</p>
+          </div>
         </div>
       </div>
     );
@@ -191,7 +179,7 @@ const FormConsultoria = () => {
         {/* Progress */}
         <div className="mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
-            {[1, 2, 3, 4, 5, 6].map((num) => (
+            {[1, 2, 3, 4, 5].map((num) => (
               <div
                 key={num}
                 className={`h-2 rounded-full transition-all ${
@@ -201,7 +189,7 @@ const FormConsultoria = () => {
             ))}
           </div>
           <p className="text-center text-sm text-gray-600">
-            Etapa {step} de 6
+            Etapa {step} de 5
           </p>
         </div>
 
@@ -506,77 +494,6 @@ const FormConsultoria = () => {
             </div>
           )}
 
-          {/* Step 6 - Agendamento */}
-          {step === 6 && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Escolha Data e Horário</h2>
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-4">
-                  Selecione um dia *
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                  {availableDates.map((date, index) => {
-                    const dateStr = date.toLocaleDateString('pt-BR', { 
-                      weekday: 'short', 
-                      day: '2-digit', 
-                      month: 'short' 
-                    });
-                    const fullDate = date.toLocaleDateString('pt-BR');
-                    
-                    return (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => setSelectedDate(fullDate)}
-                        className={`p-3 border-2 rounded-lg text-sm transition-all ${
-                          selectedDate === fullDate
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-300'
-                        }`}
-                      >
-                        <div className="font-semibold capitalize">{dateStr}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {selectedDate && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-4">
-                    Selecione um horário *
-                  </label>
-                  <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                    {availableTimes.map((time) => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => setSelectedTime(time)}
-                        className={`p-3 border-2 rounded-lg transition-all ${
-                          selectedTime === time
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-300'
-                        }`}
-                      >
-                        <Clock className="w-4 h-4 mx-auto mb-1 text-gray-400" />
-                        <div className="text-sm font-semibold">{time}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedDate && selectedTime && (
-                <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 mt-4">
-                  <p className="text-center text-gray-700">
-                    <strong>Agendamento:</strong> {selectedDate} às {selectedTime}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Navigation */}
           <div className="flex gap-4 mt-8">
             {step > 1 && (
@@ -589,7 +506,7 @@ const FormConsultoria = () => {
               </button>
             )}
             
-            {step < 6 ? (
+            {step < 5 ? (
               <button
                 type="button"
                 onClick={nextStep}
@@ -621,7 +538,7 @@ const FormConsultoria = () => {
                   </>
                 ) : (
                   <>
-                    Confirmar Agendamento
+                    Enviar e Agendar no WhatsApp
                     <CheckCircle className="w-5 h-5" />
                   </>
                 )}
